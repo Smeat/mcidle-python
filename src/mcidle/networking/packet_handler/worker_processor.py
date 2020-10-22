@@ -23,7 +23,8 @@ class WorkerProcessor(threading.Thread):
         while self.running:
             if not self.queue.empty():
                 packet = self.queue.get()
-                response = self.packet_processor.process_packet(packet)
-
-                if response:
-                    self.connection.send_packet(response)
+                def packet_thread_func(self, packet):
+                    response = self.packet_processor.process_packet(packet)
+                    if response:
+                        self.connection.send_packet(response)
+                threading.Thread(target=packet_thread_func, args=(self, packet,)).start()

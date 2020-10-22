@@ -66,6 +66,15 @@ class ClientboundProcessor(PacketProcessor):
             print("ChunkData", chunk_data.ChunkX, chunk_data.ChunkZ, flush=True)
 
     def process_packet(self, packet):
+        if packet.id == KeepAlive.id:  # KeepAlive Clientbound
+            keep_alive = KeepAlive().read(packet.packet_buffer)
+            print("Responded to KeepAlive", keep_alive, flush=True)
+            return KeepAliveServerbound(KeepAliveID=keep_alive.KeepAliveID)
+        elif packet.id == ChatMessage.id:
+            chat_message = ChatMessage().read(packet.packet_buffer)
+            print(chat_message, flush=True)
+            return None
+        # game state dependent stuff
         with self.game_state.state_lock:
             if packet.id == Respawn.id:
                 # In case the gamemode is changed through a respawn packet
@@ -87,13 +96,6 @@ class ClientboundProcessor(PacketProcessor):
                 self.spawn_entity(packet)
             elif packet.id == DestroyEntities.id:
                 self.destroy_entities(packet)
-            elif packet.id == KeepAlive.id:  # KeepAlive Clientbound
-                keep_alive = KeepAlive().read(packet.packet_buffer)
-                print("Responded to KeepAlive", keep_alive, flush=True)
-                return KeepAliveServerbound(KeepAliveID=keep_alive.KeepAliveID)
-            elif packet.id == ChatMessage.id:
-                chat_message = ChatMessage().read(packet.packet_buffer)
-                print(chat_message, flush=True)
             elif packet.id == PlayerPositionAndLook.id:
                 pos_packet = PlayerPositionAndLook().read(packet.packet_buffer)
 
