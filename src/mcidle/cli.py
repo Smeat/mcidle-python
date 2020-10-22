@@ -73,7 +73,11 @@ def main():
             conn = MinecraftConnection(ip=args.ip, port=args.port, server_port=args.dport, protocol=args.protocol, \
                                        username=credentials['selectedProfile']['name'], profile=credentials, \
                                        listen_thread=listen_thread)
-            conn.run_handler()
+            try:
+                conn.run_handler()
+            except KeyboardInterrupt:
+                conn.stop()
+                break
             conn.stop()
             print("Disconnected..reconnecting in %s seconds" % args.reconnect, flush=True)
             time.sleep(args.reconnect)
