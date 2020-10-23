@@ -2,7 +2,6 @@ import threading
 
 from multiprocessing import Queue
 
-
 class UpstreamThread(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self, daemon=True)
@@ -10,7 +9,6 @@ class UpstreamThread(threading.Thread):
         self.socket = None
         self.socket_lock = threading.RLock()
         self.running = True
-        self._queue_cv = threading.Condition()
 
     def set_socket(self, socket):
         self.clear()
@@ -23,8 +21,6 @@ class UpstreamThread(threading.Thread):
 
     def put(self, b):
         self._queue.put(b)
-        with self._queue_cv:
-            self._queue_cv.notifyAll()
 
     def clear(self):
         while not self._queue.empty():
@@ -36,15 +32,13 @@ class UpstreamThread(threading.Thread):
 
     def run(self):
         while self.running:
-            while self._queue.empty():
-                # Can't use queue.get(True) since the socket might be invalid.
-                with self._queue_cv:
-                    self._queue_cv.wait()
+            pkt = self._queue.get(True)
             # Acquire the lock since socket can be None when set in another thread
             with self.socket_lock:
+                # if the socket is set, the queue is cleared anyways, so just ignoring the packet is fine
                 if self.socket:
-                    while not self._queue.empty():
-                        pkt = self._queue.get()
+                    while True:
+                        # This will throw queue.Empty if no item is left. Cant use empty() since it is unreliable
                         try:
                             self.socket.send(pkt)
                         except Exception as _:
